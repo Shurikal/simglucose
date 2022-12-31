@@ -7,9 +7,7 @@ from simglucose.patient.t1dpatient import T1DPatient
 from simglucose.sensor.cgm import CGMSensor
 from simglucose.actuator.pump import InsulinPump
 from simglucose.simulation.scenario_gen import RandomScenario
-from simglucose.patient.t1dpatient import Action
-from simglucose.analysis.risk import risk_index
-from simglucose.simulation.rendering import Viewer
+from simglucose.controller.base import Action
 
 from datetime import datetime
 
@@ -28,24 +26,15 @@ class T1DSimEnv(gym.Env):
         '''
         self.np_random = np.random.default_rng(seed=seed)
 
-        # todo, noise seed
-        self.sensor = CGMSensor.withName(self.SENSOR_HARDWARE)
-        self.pump = InsulinPump.withName(self.INSULIN_PUMP_HARDWARE)
-
-        self.sample_time = self.sensor.sample_time
-
         if patient_name is None:
             patient_name = ['adolescent#001']
 
         self.patient_name = patient_name
         self.reward_fun = reward_fun
+        self.custom_scenario = custom_scenario
 
-        if custom_scenario is None:
-            self.custom_scenario = RandomScenario(start_time=datetime(2018, 1, 1, 0, 0))
-        else:
-            self.custom_scenario = custom_scenario
+        self.env, _, _, _ = self._create_env()
 
-        self.time = None
 
         self.observation_space = spaces.Dict(
             {
@@ -56,88 +45,70 @@ class T1DSimEnv(gym.Env):
 
         self.action_space = spaces.Dict(
             {
-                "basal": spaces.Box(low=0,high=self.pump._params['max_basal'], shape=(1,)),
+                "basal": spaces.Box(low=0,high=self.env.pump._params['max_basal'], shape=(1,)),
                 "bolus": spaces.Box(low=0,high=0, shape=(1,)),
             }
         )
 
     # todo
     def _get_obs(self):
-        patient_action = self.scenario.get_action(self.time)
-        return {"GCM": np.array([self.sensor.measure(self.patient)], dtype=np.float32), "CHO": np.array([patient_action.meal], dtype=np.float32)}
+        CHO = self.env.scenario.get_action(self.env.time).meal
+        return {"GCM": np.array([self.env.sensor.measure(self.env.patient)], dtype=np.float32), "CHO": np.array([CHO], dtype=np.float32)}
 
     # todo
     def _get_info(self):
-        return {}
+        return {"time": self.env.time}
+
+
+    def _create_env(self):
+        # Derive a random seed. This gets passed as a uint, but gets
+        # checked as an int elsewhere, so we need to keep it below
+        # 2**31.
+        seed2 = self.np_random.integers(0, 2**31)
+        seed3 = self.np_random.integers(0, 2**31)
+        seed4 = self.np_random.integers(0, 2**31)
+
+        hour = self.np_random.integers(0, 24)
+        start_time = datetime(2018, 1, 1, hour, 0, 0)    
+
+        if isinstance(self.patient_name, list):
+            patient_name = self.np_random.choice(self.patient_name)
+            patient = T1DPatient.withName(patient_name, random_init_bg=True, seed=seed4)
+        else:
+            patient = T1DPatient.withName(self.patient_name, random_init_bg=True, seed=seed4)
+
+        if isinstance(self.custom_scenario, list):
+           scenario = self.np_random.choice(self.custom_scenario)
+        else:
+            scenario = RandomScenario(start_time=start_time, seed=seed3) if self.custom_scenario is None else self.custom_scenario
+        
+        sensor = CGMSensor.withName(self.SENSOR_HARDWARE, seed=seed2)
+        pump = InsulinPump.withName(self.INSULIN_PUMP_HARDWARE)
+        env = _T1DSimEnv(patient, sensor, pump, scenario)
+        return env, seed2, seed3, seed4
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        if isinstance(self.patient_name, list):
-            patient_name = self.np_random.choice(self.patient_name)
-            self.patient = T1DPatient.withName(patient_name, random_init_bg=True, seed=seed)
-        else:
-            self.patient = T1DPatient.withName(self.patient_name, random_init_bg=True, seed=seed)
-
-        if isinstance(self.custom_scenario, list):
-            self.scenario = self.np_random.choice(self.custom_scenario)
-        else:
-            self.scenario = RandomScenario(start_time=datetime(2018,1,1,0,0,0), seed=seed) if self.custom_scenario is None else self.custom_scenario
-
-        self.time = self.scenario.start_time
-
-        self.patient.reset()
-        self.sensor.reset()
-        self.pump.reset()
-        self.scenario.reset()
+        self.env, _, _, _ = self._create_env()
+        self.env.reset()
 
         observation = self._get_obs()
         info = self._get_info()
 
         return observation, info
 
-    def mini_step(self, action):
-        # current action
-        patient_action = self.scenario.get_action(self.time)
-        basal = self.pump.basal(action['basal'])
-        bolus = self.pump.bolus(action['bolus'])
-        insulin = basal + bolus
-        CHO = patient_action.meal
-        patient_mdl_act = Action(insulin=insulin, CHO=CHO)
-
-        # State update
-        self.patient.step(patient_mdl_act)
-
-        # next observation
-        BG = self.patient.observation.Gsub
-        CGM = self.sensor.measure(self.patient)
-
-        return CHO, insulin, BG, CGM
     
     def step(self, action):
+        act = Action(basal=action["basal"], bolus=action["bolus"])
 
-        CHO = 0.0
-        insulin = 0.0
-        BG = 0.0
-        CGM = 0.0
-
-        for _ in range(int(self.sample_time)):
-            # Compute moving average as the sample measurements
-            tmp_CHO, tmp_insulin, tmp_BG, tmp_CGM = self.mini_step(action)
-            CHO += tmp_CHO / self.sample_time
-            insulin += tmp_insulin / self.sample_time
-            BG += tmp_BG / self.sample_time
-            CGM += tmp_CGM / self.sample_time
-
-        observation = self._get_obs()
-        info = self._get_info()
-        reward = 0.0
-        terminated = False
 
         if self.reward_fun is None:
-            return (observation, reward, terminated, False, info)
+            cache = self.env.step(act)
+        else:
+            cache = self.env.step(act, reward_fun=self.reward_fun)
 
-        return (observation, reward, terminated, False, info)
+        return self._get_obs(), cache.reward, cache.done, False, self._get_info()
 
 
     def render(self):
