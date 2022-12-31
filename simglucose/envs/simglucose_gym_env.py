@@ -38,7 +38,7 @@ class T1DSimEnv(gym.Env):
 
         self.observation_space = spaces.Dict(
             {
-                "GCM": spaces.Box(low=0,high=10000, shape=(1,)),
+                "CGM": spaces.Box(low=0,high=10000, shape=(1,)),
                 "CHO": spaces.Box(low=0,high= 10000, shape=(1,)),
             }
         )
@@ -53,11 +53,15 @@ class T1DSimEnv(gym.Env):
     # todo
     def _get_obs(self):
         CHO = self.env.scenario.get_action(self.env.time).meal
-        return {"GCM": np.array([self.env.sensor.measure(self.env.patient)], dtype=np.float32), "CHO": np.array([CHO], dtype=np.float32)}
+        return {"CGM": np.array([self.env.sensor.measure(self.env.patient)], dtype=np.float32), "CHO": np.array([CHO], dtype=np.float32)}
 
     # todo
     def _get_info(self):
-        return {"time": self.env.time, "meal": self.env.scenario.get_action(self.env.time).meal}
+        return {"time": self.env.time, 
+                "meal": self.env.scenario.get_action(self.env.time).meal, 
+                "patient_name": self.env.patient.name, 
+                "meal": self.env.scenario.get_action(self.env.time).meal,
+                "sample_time": self.env.sensor.sample_time}
 
 
     def _create_env(self):
@@ -111,5 +115,5 @@ class T1DSimEnv(gym.Env):
         return self._get_obs(), cache.reward, cache.done, False, self._get_info()
 
 
-    def render(self):
-        pass
+    def render(self, mode='human', close=False):
+        self.env.render(close=close)
