@@ -3,7 +3,9 @@ import unittest
 from simglucose.simulation.scenario import CustomScenario
 from simglucose.controller.basal_bolus_ctrller import BBController
 import datetime as dt
+from collections import namedtuple
 
+Observation = namedtuple('Observation', ['CGM'])
 
 class TestCustomScenario(unittest.TestCase):
     def test_custom_scenario(self):
@@ -30,22 +32,21 @@ class TestCustomScenario(unittest.TestCase):
         reward = 0
         done = False
 
-        sample_step = env.env.sensor.sample_time
+        observation , info = env.reset()
 
-        info = {'sample_time': sample_step,
-                'patient_name': 'adolescent#002',
-                'meal': 0}
+        sample_step = info["sample_time"]
 
-        observation = env.reset()
         for t in range(61):
             env.render(mode='human')
+            obs = Observation(observation["CGM"])
 
-            ctrl_action = ctrller.policy(observation, reward, done, **info)
-            action = ctrl_action.basal + ctrl_action.bolus
-            observation, reward, done, info = env.step(action)
+            ctrl_action = ctrller.policy(obs, reward, done, **info)
+            action = {"basal": ctrl_action.basal , "bolus" : ctrl_action.bolus}
 
+            observation, reward, done, _, info = env.step(action)
 
-            if info["meal"] > 0 and t*sample_step == (meals[current_pos][0]*60):
+            if info["meal"] > 0 and (t+1)* int(sample_step) == (meals[current_pos][0]*60):
+                print("Meal at time {} with amount {}".format(t*sample_step, info["meal"]))
                 meals_checked[current_pos] = True
                 current_pos += 1
 
