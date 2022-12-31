@@ -46,7 +46,7 @@ class T1DSimEnv(gym.Env):
         self.action_space = spaces.Dict(
             {
                 "basal": spaces.Box(low=0,high=self.env.pump._params['max_basal'], shape=(1,)),
-                "bolus": spaces.Box(low=0,high=0, shape=(1,)),
+                "bolus": spaces.Box(low=0,high=self.env.pump._params['max_bolus'], shape=(1,)),
             }
         )
 
@@ -57,7 +57,7 @@ class T1DSimEnv(gym.Env):
 
     # todo
     def _get_info(self):
-        return {"time": self.env.time}
+        return {"time": self.env.time, "meal": self.env.scenario.get_action(self.env.time).meal}
 
 
     def _create_env(self):
