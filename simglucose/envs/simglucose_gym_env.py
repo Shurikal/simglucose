@@ -33,7 +33,7 @@ class T1DSimEnv(gym.Env):
         self.reward_fun = reward_fun
         self.custom_scenario = custom_scenario
 
-        self.env, _, _, _ = self._create_env()
+        self.t1dsimenv, _, _, _ = self._create_env()
 
 
         self.observation_space = spaces.Dict(
@@ -45,23 +45,21 @@ class T1DSimEnv(gym.Env):
 
         self.action_space = spaces.Dict(
             {
-                "basal": spaces.Box(low=0,high=self.env.pump._params['max_basal'], shape=(1,)),
-                "bolus": spaces.Box(low=0,high=self.env.pump._params['max_bolus'], shape=(1,)),
+                "basal": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_basal'], shape=(1,)),
+                "bolus": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_bolus'], shape=(1,)),
             }
         )
 
-    # todo
     def _get_obs(self):
-        CHO = self.env.scenario.get_action(self.env.time).meal
-        return {"CGM": np.array([self.env.sensor.measure(self.env.patient)], dtype=np.float32), "CHO": np.array([CHO], dtype=np.float32)}
+        CHO = self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal
+        return {"CGM": np.array([self.t1dsimenv.sensor.measure(self.t1dsimenv.patient)], dtype=np.float32), "CHO": np.array([CHO], dtype=np.float32)}
 
-    # todo
     def _get_info(self):
-        return {"time": self.env.time, 
-                "meal": self.env.scenario.get_action(self.env.time).meal, 
-                "patient_name": self.env.patient.name, 
-                "meal": self.env.scenario.get_action(self.env.time).meal,
-                "sample_time": self.env.sensor.sample_time}
+        return {"time": self.t1dsimenv.time, 
+                "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal, 
+                "patient_name": self.t1dsimenv.patient.name, 
+                "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal,
+                "sample_time": self.t1dsimenv.sensor.sample_time}
 
 
     def _create_env(self):
@@ -94,8 +92,8 @@ class T1DSimEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        self.env, _, _, _ = self._create_env()
-        self.env.reset()
+        self.t1dsimenv, _, _, _ = self._create_env()
+        self.t1dsimenv.reset()
 
         observation = self._get_obs()
         info = self._get_info()
@@ -106,14 +104,22 @@ class T1DSimEnv(gym.Env):
     def step(self, action):
         act = Action(basal=action["basal"], bolus=action["bolus"])
 
-
         if self.reward_fun is None:
-            cache = self.env.step(act)
+            cache = self.t1dsimenv.step(act)
         else:
-            cache = self.env.step(act, reward_fun=self.reward_fun)
+            cache = self.t1dsimenv.step(act, reward_fun=self.reward_fun)
 
         return self._get_obs(), cache.reward, cache.done, False, self._get_info()
 
 
     def render(self, mode='human', close=False):
-        self.env.render(close=close)
+        self.t1dsimenv.render(close=close)
+
+    def seed(self, seed=None):
+        self.np_random = np.random.default_rng(seed=seed)
+        seed1 = self.np_random.integers(0, 2**31)
+        self.t1dsimenv, seed2, seed3, seed4 = self._create_env()
+        return [seed1, seed2, seed3, seed4]
+
+    def get_t1dsimenv(self):
+        return self.t1dsimenv

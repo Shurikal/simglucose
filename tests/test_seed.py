@@ -16,11 +16,11 @@ class TestSeed(unittest.TestCase):
 
         env.seed(0)
         observation_seed0 = env.reset()
-        self.assertEqual(env.env.scenario.start_time, datetime(2018, 1, 1, 23, 0, 0))
+        self.assertEqual(env.get_t1dsimenv().scenario.start_time, datetime(2018, 1, 1, 4, 0, 0))
 
         env.seed(1000)
         observation_seed1 = env.reset()
-        self.assertEqual(env.env.scenario.start_time, datetime(2018, 1, 1, 14, 0, 0))
+        self.assertEqual(env.get_t1dsimenv().scenario.start_time, datetime(2018, 1, 1, 12, 0, 0))
 
         self.assertNotEqual(observation_seed0, observation_seed1)
 

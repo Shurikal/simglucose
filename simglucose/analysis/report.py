@@ -22,8 +22,13 @@ def ensemble_BG(BG, ax=None, plot_var=False, nstd=3):
     if ax is None:
         fig, ax = plt.subplots(1)
     if plot_var and not std_curve.isnull().all():
-        ax.fill_between(
-            t, up_env, down_env, alpha=0.5, label='+/- {0}*std'.format(nstd))
+        pass
+        # todo, fix infinite error here
+        """
+        TypeError: ufunc 'isfinite' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+        """
+        #ax.fill_between(
+        #    t, up_env, down_env, alpha=0.5, label='+/- {0}*std'.format(nstd))
     for p in BG:
         ax.plot_date(
             t, BG[p], '-', color='grey', alpha=0.5, lw=0.5, label='_nolegend_')

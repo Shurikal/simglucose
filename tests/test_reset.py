@@ -15,12 +15,12 @@ class TestReset(unittest.TestCase):
 
         env.seed(0)
         observation0 = env.reset()
-        start_time0 = env.env.scenario.start_time
-        scenario0 = env.env.scenario.scenario
+        start_time0 = env.get_t1dsimenv().scenario.start_time
+        scenario0 = env.get_t1dsimenv().scenario.scenario
 
         observation1 = env.reset()
-        start_time1 = env.env.scenario.start_time
-        scenario1 = env.env.scenario.scenario
+        start_time1 = env.get_t1dsimenv().scenario.start_time
+        scenario1 = env.get_t1dsimenv().scenario.scenario
 
         self.assertNotEqual(observation0, observation1)
         self.assertNotEqual(start_time0, start_time1)
@@ -31,21 +31,21 @@ class TestReset(unittest.TestCase):
 
         env.seed(0)
         observation0 = env.reset()
-        start_time0 = env.env.scenario.start_time
-        scenario0 = env.env.scenario.scenario
+        start_time0 = env.get_t1dsimenv().scenario.start_time
+        scenario0 = env.get_t1dsimenv().scenario.scenario
 
         observation1 = env.reset()
-        start_time1 = env.env.scenario.start_time
-        scenario1 = env.env.scenario.scenario
+        start_time1 = env.get_t1dsimenv().scenario.start_time
+        scenario1 = env.get_t1dsimenv().scenario.scenario
         
         env.seed(0)
         observation2 = env.reset()
-        start_time2 = env.env.scenario.start_time
-        scenario2 = env.env.scenario.scenario
+        start_time2 = env.get_t1dsimenv().scenario.start_time
+        scenario2 = env.get_t1dsimenv().scenario.scenario
 
         observation3 = env.reset()
-        start_time3 = env.env.scenario.start_time
-        scenario3 = env.env.scenario.scenario
+        start_time3 = env.get_t1dsimenv().scenario.start_time
+        scenario3 = env.get_t1dsimenv().scenario.scenario
 
         self.assertEqual(observation0, observation2)
         self.assertEqual(observation1, observation3)
@@ -61,21 +61,21 @@ class TestReset(unittest.TestCase):
 
         env.seed(0)
         observation0 = env.reset()
-        start_time0 = env.env.scenario.start_time
-        scenario0 = env.env.scenario.scenario
+        start_time0 = env.get_t1dsimenv().scenario.start_time
+        scenario0 = env.get_t1dsimenv().scenario.scenario
 
         observation1 = env.reset()
-        start_time1 = env.env.scenario.start_time
-        scenario1 = env.env.scenario.scenario
+        start_time1 = env.get_t1dsimenv().scenario.start_time
+        scenario1 = env.get_t1dsimenv().scenario.scenario
         
         env.seed(1)
         observation2 = env.reset()
-        start_time2 = env.env.scenario.start_time
-        scenario2 = env.env.scenario.scenario
+        start_time2 = env.get_t1dsimenv().scenario.start_time
+        scenario2 = env.get_t1dsimenv().scenario.scenario
 
         observation3 = env.reset()
-        start_time3 = env.env.scenario.start_time
-        scenario3 = env.env.scenario.scenario
+        start_time3 = env.get_t1dsimenv().scenario.start_time
+        scenario3 = env.get_t1dsimenv().scenario.scenario
 
         self.assertNotEqual(observation0, observation2)
         self.assertNotEqual(observation1, observation3)
