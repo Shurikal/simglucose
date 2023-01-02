@@ -57,6 +57,7 @@ class T1DSimEnv(gym.Env):
     def _get_obs(self):
         return {"CGM": np.array(self.CGM_hist, dtype=np.float32), "CHO": np.array(self.CHO_hist, dtype=np.float32)}
 
+    # todo match time
     def _get_info(self):
         return {"time": self.t1dsimenv.time, 
                 "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal, 
@@ -95,7 +96,9 @@ class T1DSimEnv(gym.Env):
         super().reset(seed=seed)
 
         self.t1dsimenv, _, _, _ = self._create_env()
-        self.t1dsimenv.reset()
+        cache = self.t1dsimenv.reset()
+
+        self.CGM_hist = [cache.observation.CGM] * self.history_length
 
         observation = self._get_obs()
         info = self._get_info()
