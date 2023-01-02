@@ -46,7 +46,7 @@ class TestCustomScenario(unittest.TestCase):
             observation, reward, done, _, info = env.step(action)
 
             if info["meal"] > 0 and (t+1)* int(sample_step) == (meals[current_pos][0]*60):
-                print("Meal at time {} with amount {}".format(t*sample_step, info["meal"]))
+                print("Meal at time {} with amount {}".format((t+1)*sample_step, info["meal"]))
                 meals_checked[current_pos] = True
                 current_pos += 1
 

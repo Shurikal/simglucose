@@ -45,8 +45,8 @@ class T1DSimEnv(gym.Env):
 
         self.action_space = spaces.Dict(
             {
-                "basal": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_basal'], shape=(1,)),
-                "bolus": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_bolus'], shape=(1,)),
+                "basal": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_basal'], shape=()),
+                "bolus": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_bolus'], shape=()),
             }
         )
 
