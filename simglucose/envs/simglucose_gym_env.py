@@ -19,7 +19,7 @@ class T1DSimEnv(gym.Env):
     INSULIN_PUMP_HARDWARE = 'Insulet'
 
   
-    def __init__(self, patient_name=None, custom_scenario=None, reward_fun=None, seed=None):
+    def __init__(self, patient_name=None, custom_scenario=None, reward_fun=None, seed=None, history_length=1):
         '''
         patient_name must be 'adolescent#001' to 'adolescent#010',
         or 'adult#001' to 'adult#010', or 'child#001' to 'child#010'
@@ -35,11 +35,15 @@ class T1DSimEnv(gym.Env):
 
         self.t1dsimenv, _, _, _ = self._create_env()
 
+        self.history_length = history_length
+
+        self.CGM_hist = [0] * history_length
+        self.CHO_hist = [0] * history_length
 
         self.observation_space = spaces.Dict(
             {
-                "CGM": spaces.Box(low=0,high=10000, shape=(1,)),
-                "CHO": spaces.Box(low=0,high= 10000, shape=(1,)),
+                "CGM": spaces.Box(low=0,high=10000, shape=(history_length,)),
+                "CHO": spaces.Box(low=0,high= 10000, shape=(history_length,)),
             }
         )
 
@@ -51,8 +55,7 @@ class T1DSimEnv(gym.Env):
         )
 
     def _get_obs(self):
-        CHO = self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal
-        return {"CGM": np.array([self.t1dsimenv.CGM_hist[-1]], dtype=np.float32), "CHO": np.array([CHO], dtype=np.float32)}
+        return {"CGM": np.array(self.CGM_hist, dtype=np.float32), "CHO": np.array(self.CHO_hist, dtype=np.float32)}
 
     def _get_info(self):
         return {"time": self.t1dsimenv.time, 
@@ -107,6 +110,9 @@ class T1DSimEnv(gym.Env):
             cache = self.t1dsimenv.step(act)
         else:
             cache = self.t1dsimenv.step(act, reward_fun=self.reward_fun)
+
+        self.CGM_hist = self.CGM_hist[1:] + [cache.observation.CGM]
+        self.CHO_hist = self.CHO_hist[1:] + [cache.info["meal"]]
 
         return self._get_obs(), cache.reward, cache.done, False, self._get_info()
 
