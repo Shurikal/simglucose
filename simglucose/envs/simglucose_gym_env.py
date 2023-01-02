@@ -52,13 +52,12 @@ class T1DSimEnv(gym.Env):
 
     def _get_obs(self):
         CHO = self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal
-        return {"CGM": np.array([self.t1dsimenv.sensor.measure(self.t1dsimenv.patient)], dtype=np.float32), "CHO": np.array([CHO], dtype=np.float32)}
+        return {"CGM": np.array([self.t1dsimenv.CGM_hist[-1]], dtype=np.float32), "CHO": np.array([CHO], dtype=np.float32)}
 
     def _get_info(self):
         return {"time": self.t1dsimenv.time, 
                 "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal, 
                 "patient_name": self.t1dsimenv.patient.name, 
-                "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal,
                 "sample_time": self.t1dsimenv.sensor.sample_time}
 
 

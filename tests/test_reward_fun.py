@@ -7,6 +7,7 @@ Observation = namedtuple('Observation', ['CGM'])
 
 
 def custom_reward(BG_last_hour):
+    print(BG_last_hour)
     if BG_last_hour[-1] > 180:
         return -1
     elif BG_last_hour[-1] < 70:
@@ -43,6 +44,7 @@ class TestCustomReward(unittest.TestCase):
             action = {"basal": ctrl_action.basal , "bolus" : ctrl_action.bolus}
             observation, reward, done, _, info = env.step(action)
             print("Reward = {}".format(reward))
+            print(f"CGM = {observation['CGM']}")
             if observation["CGM"] > 180:
                 self.assertEqual(reward, -1)
             elif observation["CGM"] < 70:
