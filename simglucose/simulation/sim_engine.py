@@ -56,6 +56,7 @@ class SimObj(object):
 def sim(sim_object):
     print("Process ID: {}".format(os.getpid()))
     print('Simulation starts ...')
+    print(f"Simulating {sim_object.env.patient.name}")
     sim_object.simulate()
     sim_object.save_results()
     print('Simulation Completed!')

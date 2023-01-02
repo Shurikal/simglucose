@@ -17,18 +17,13 @@ def ensemble_BG(BG, ax=None, plot_var=False, nstd=3):
     up_env = mean_curve + nstd * std_curve
     down_env = mean_curve - nstd * std_curve
 
-    # t = BG.index.to_pydatetime()
+    #t = BG.index.to_pydatetime()
     t = pd.to_datetime(BG.index)
     if ax is None:
         fig, ax = plt.subplots(1)
     if plot_var and not std_curve.isnull().all():
-        pass
-        # todo, fix infinite error here
-        """
-        TypeError: ufunc 'isfinite' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
-        """
-        #ax.fill_between(
-        #    t, up_env, down_env, alpha=0.5, label='+/- {0}*std'.format(nstd))
+        ax.fill_between(
+            t, up_env, down_env, alpha=0.5, label='+/- {0}*std'.format(nstd))
     for p in BG:
         ax.plot_date(
             t, BG[p], '-', color='grey', alpha=0.5, lw=0.5, label='_nolegend_')
@@ -101,7 +96,7 @@ def risk_index_trace(df_BG, visualize=False):
     chunk_BG = [df_BG.iloc[i:i + 60, :] for i in range(0, len(df_BG), 60)]
 
     fBG = [
-        np.mean(1.509 * (np.log(BG[BG > 0])**1.084 - 5.381)) for BG in chunk_BG
+        np.mean(1.509 * (np.log(BG[BG > 0])**1.084 - 5.381), axis=0) for BG in chunk_BG
     ]
 
     fBG_df = pd.concat(fBG, axis=1).transpose()
