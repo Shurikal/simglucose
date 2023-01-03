@@ -19,7 +19,14 @@ class T1DSimEnv(gym.Env):
     INSULIN_PUMP_HARDWARE = 'Insulet'
 
   
-    def __init__(self, patient_name=None, custom_scenario=None, reward_fun=None, seed=None, history_length=1):
+    def __init__(self,  patient_name=None, 
+                        custom_scenario=None, 
+                        reward_fun=None, 
+                        seed=None, 
+                        history_length=1, 
+                        enable_bolus=False,
+                        enable_meal=False,
+                        enable_insulin_history=True):
         '''
         patient_name must be 'adolescent#001' to 'adolescent#010',
         or 'adult#001' to 'adult#010', or 'child#001' to 'child#010'
@@ -33,30 +40,47 @@ class T1DSimEnv(gym.Env):
         self.reward_fun = reward_fun
         self.custom_scenario = custom_scenario
 
+        self.enable_bolus = enable_bolus
+
         self.t1dsimenv, _, _, _ = self._create_env()
 
         self.history_length = history_length
 
         self.CGM_hist = [0] * history_length
         self.CHO_hist = [0] * history_length
+        self.insulin_hist = [0] * history_length
 
         self.observation_space = spaces.Dict(
             {
                 "CGM": spaces.Box(low=0,high=10000, shape=(history_length,)),
-                "CHO": spaces.Box(low=0,high= 10000, shape=(history_length,)),
             }
         )
+        self.enable_meal = enable_meal
+        if enable_meal:
+            self.observation_space["CHO"] = spaces.Box(low=0,high=10000, shape=(history_length,))
+
+        self.enable_insulin_history = enable_insulin_history
+        if enable_insulin_history:
+            self.observation_space["insulin"] = spaces.Box(low=0,high=10000, shape=(history_length,))
 
         self.action_space = spaces.Dict(
             {
                 "basal": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_basal'], shape=()),
-                "bolus": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_bolus'], shape=()),
             }
         )
 
-    def _get_obs(self):
-        return {"CGM": np.array(self.CGM_hist, dtype=np.float32), "CHO": np.array(self.CHO_hist, dtype=np.float32)}
+        if enable_bolus:
+            self.action_space["bolus"] = spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_bolus'], shape=())
 
+    def _get_obs(self):
+        cache = {"CGM": np.array(self.CGM_hist, dtype=np.float32)}
+        if self.enable_meal:
+            cache["CHO"] =  np.array(self.CHO_hist, dtype=np.float32)
+        if self.enable_insulin_history:
+            cache["insulin"] =  np.array(self.insulin_hist, dtype=np.float32)
+
+        return cache
+ 
     # todo match time
     def _get_info(self):
         return {"time": self.t1dsimenv.time, 
@@ -107,7 +131,13 @@ class T1DSimEnv(gym.Env):
 
     
     def step(self, action):
-        act = Action(basal=action["basal"], bolus=action["bolus"])
+        insulin = 0
+        if self.enable_bolus:
+            act = Action(basal=action["basal"], bolus=action["bolus"])
+            insulin = action["bolus"] + action["basal"]
+        else:
+            act = Action(basal=action["basal"], bolus=0)
+            insulin = action["basal"]
 
         if self.reward_fun is None:
             cache = self.t1dsimenv.step(act)
@@ -116,6 +146,7 @@ class T1DSimEnv(gym.Env):
 
         self.CGM_hist = self.CGM_hist[1:] + [cache.observation.CGM]
         self.CHO_hist = self.CHO_hist[1:] + [cache.info["meal"]]
+        self.insulin_hist = self.insulin_hist[1:] + [insulin]
 
         return self._get_obs(), cache.reward, cache.done, False, self._get_info()
 
