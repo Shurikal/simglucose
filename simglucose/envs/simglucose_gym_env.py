@@ -123,6 +123,8 @@ class T1DSimEnv(gym.Env):
         cache = self.t1dsimenv.reset()
 
         self.CGM_hist = [cache.observation.CGM] * self.history_length
+        self.insulin_hist = [0] * self.history_length
+        self.CHO_hist = [0] * self.history_length
 
         observation = self._get_obs()
         info = self._get_info()
