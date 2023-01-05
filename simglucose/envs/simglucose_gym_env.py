@@ -256,7 +256,7 @@ class T1DSimEnvDiscrete(gym.Env):
         seed4 = self.np_random.integers(0, 2**31)
 
         hour = self.np_random.integers(0, 24)
-        start_time = datetime(2018, 1, 1, 6, 0, 0)    
+        start_time = datetime(2018, 1, 1, hour, 0, 0)    
 
         if isinstance(self.patient_name, list):
             patient_name = self.np_random.choice(self.patient_name)
@@ -287,11 +287,16 @@ class T1DSimEnvDiscrete(gym.Env):
         self.basal_rate = self.t1dsimenv.patient._params['u2ss'] * self.t1dsimenv.patient._params['BW'] / 6000
 
 
-        self.quest = self.quest[self.quest.Name.str.match(self.t1dsimenv.patient.name)]
+        # Set params for bolus
 
-        self.CR = self.quest.CR.values
-        self.CF = self.quest.CF.values
-        
+        if any(self.quest.Name.str.match(self.t1dsimenv.patient.name)):
+            quest = self.quest[self.quest.Name.str.match(self.t1dsimenv.patient.name)]
+            self.CR = quest.CR.values[0]
+            self.CF = quest.CF.values[0]
+
+        else:
+            self.CR = 1 / 15
+            self.CF = 1 / 50
 
         observation = self._get_obs()
         info = self._get_info()
@@ -309,7 +314,7 @@ class T1DSimEnvDiscrete(gym.Env):
         if len(food) > 0 and food[-1] > 0:
             bolus = (food[-1] * self.t1dsimenv.sample_time) / self.CR \
                     + (self.CGM_hist[-1] > 150) * (self.CGM_hist[-1] - 140) /self.CF  # unit: U
-            bolus = bolus[0] *  (0.7 + np.random.random()*0.4)
+            bolus = bolus *  (0.4 + np.random.random()*0.4)
 
         act = Action(basal=insulin_rate, bolus=bolus)
 
