@@ -280,6 +280,8 @@ class T1DSimEnvDiscrete(gym.Env):
         self.t1dsimenv, _, _, _ = self._create_env()
         cache = self.t1dsimenv.reset()
 
+        print(self.t1dsimenv.patient.name)
+
         self.CGM_hist = [cache.observation.CGM] * self.history_length
         self.insulin_hist = [0] * self.history_length
         self.CHO_hist = [0] * self.history_length
@@ -314,7 +316,7 @@ class T1DSimEnvDiscrete(gym.Env):
         if len(food) > 0 and food[-1] > 0:
             bolus = (food[-1] * self.t1dsimenv.sample_time) / self.CR \
                     + (self.CGM_hist[-1] > 150) * (self.CGM_hist[-1] - 140) /self.CF  # unit: U
-            bolus = bolus *  (0.4 + np.random.random()*0.4)
+            bolus = bolus *  (0.7 + np.random.random()*0.4) / self.t1dsimenv.sample_time
 
         act = Action(basal=insulin_rate, bolus=bolus)
 
