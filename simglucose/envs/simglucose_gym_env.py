@@ -188,6 +188,8 @@ class T1DSimEnvDiscrete(gym.Env):
         '''
         self.np_random = np.random.default_rng(seed=seed)
 
+        self.insulin_rate = 0
+
         if patient_name is None:
             patient_name = ['adolescent#001']
 
@@ -218,7 +220,7 @@ class T1DSimEnvDiscrete(gym.Env):
         if enable_insulin_history:
             self.observation_space["insulin"] = spaces.Box(low=0,high=10000, shape=(history_length,))
 
-        self.action_space = spaces.Discrete(3, start=-1)
+        self.action_space = spaces.Discrete(5, start=0)
 
         # bolus is not implemented
 
@@ -276,6 +278,8 @@ class T1DSimEnvDiscrete(gym.Env):
         self.insulin_hist = [0] * self.history_length
         self.CHO_hist = [0] * self.history_length
 
+        self.basal_rate = self.t1dsimenv.patient._params['u2ss'] * self.t1dsimenv.patient._params['BW'] / 6000
+
         observation = self._get_obs()
         info = self._get_info()
 
@@ -283,12 +287,10 @@ class T1DSimEnvDiscrete(gym.Env):
 
     
     def step(self, action):
-        insulin = 0
+        action *= 0.5 # 0-4 -> 0-2
+        insulin_rate = self.basal_rate * action
 
-        print(action)
-
-        act = 0
-        insulin = action["basal"]
+        act = Action(basal=insulin_rate, bolus=0)
 
         if self.reward_fun is None:
             cache = self.t1dsimenv.step(act)
@@ -297,7 +299,7 @@ class T1DSimEnvDiscrete(gym.Env):
 
         self.CGM_hist = self.CGM_hist[1:] + [cache.observation.CGM]
         self.CHO_hist = self.CHO_hist[1:] + [cache.info["meal"]]
-        self.insulin_hist = self.insulin_hist[1:] + [insulin]
+        self.insulin_hist = self.insulin_hist[1:] + [insulin_rate]
 
         return self._get_obs(), cache.reward, cache.done, False, self._get_info()
 
