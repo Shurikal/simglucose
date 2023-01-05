@@ -9,6 +9,10 @@ from simglucose.actuator.pump import InsulinPump
 from simglucose.simulation.scenario_gen import RandomScenario
 from simglucose.controller.base import Action
 
+from simglucose.controller.basal_bolus_ctrller import CONTROL_QUEST
+
+import pandas as pd
+
 from datetime import datetime
 
 class T1DSimEnv(gym.Env):
@@ -83,8 +87,8 @@ class T1DSimEnv(gym.Env):
  
     # todo match time
     def _get_info(self):
-        return {"time": self.t1dsimenv.time, 
-                "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal, 
+        return {"time": self.t1dsimenv.current_time, 
+                "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.current_time).meal, 
                 "patient_name": self.t1dsimenv.patient.name, 
                 "sample_time": self.t1dsimenv.sensor.sample_time}
 
@@ -188,6 +192,8 @@ class T1DSimEnvDiscrete(gym.Env):
         '''
         self.np_random = np.random.default_rng(seed=seed)
 
+        self.quest = pd.read_csv(CONTROL_QUEST)
+
         self.insulin_rate = 0
 
         if patient_name is None:
@@ -235,8 +241,8 @@ class T1DSimEnvDiscrete(gym.Env):
  
     # todo match time
     def _get_info(self):
-        return {"time": self.t1dsimenv.time, 
-                "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.time).meal, 
+        return {"time": self.t1dsimenv.current_time, 
+                "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.current_time).meal, 
                 "patient_name": self.t1dsimenv.patient.name, 
                 "sample_time": self.t1dsimenv.sensor.sample_time}
 
@@ -250,7 +256,7 @@ class T1DSimEnvDiscrete(gym.Env):
         seed4 = self.np_random.integers(0, 2**31)
 
         hour = self.np_random.integers(0, 24)
-        start_time = datetime(2018, 1, 1, hour, 0, 0)    
+        start_time = datetime(2018, 1, 1, 6, 0, 0)    
 
         if isinstance(self.patient_name, list):
             patient_name = self.np_random.choice(self.patient_name)
@@ -280,6 +286,13 @@ class T1DSimEnvDiscrete(gym.Env):
 
         self.basal_rate = self.t1dsimenv.patient._params['u2ss'] * self.t1dsimenv.patient._params['BW'] / 6000
 
+
+        self.quest = self.quest[self.quest.Name.str.match(self.t1dsimenv.patient.name)]
+
+        self.CR = self.quest.CR.values
+        self.CF = self.quest.CF.values
+        
+
         observation = self._get_obs()
         info = self._get_info()
 
@@ -290,7 +303,15 @@ class T1DSimEnvDiscrete(gym.Env):
         action *= 0.5 # 0-4 -> 0-2
         insulin_rate = self.basal_rate * action
 
-        act = Action(basal=insulin_rate, bolus=0)
+        # add bolus
+        bolus = 0
+        food = self.t1dsimenv.CHO_hist
+        if len(food) > 0 and food[-1] > 0:
+            bolus = (food[-1] * self.t1dsimenv.sample_time) / self.CR \
+                    + (self.CGM_hist[-1] > 150) * (self.CGM_hist[-1] - 140) /self.CF  # unit: U
+            bolus = bolus[0] *  (0.7 + np.random.random()*0.4)
+
+        act = Action(basal=insulin_rate, bolus=bolus)
 
         if self.reward_fun is None:
             cache = self.t1dsimenv.step(act)

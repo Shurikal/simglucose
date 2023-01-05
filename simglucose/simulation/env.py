@@ -40,10 +40,12 @@ class T1DSimEnv(object):
         self.pump = pump
         self.scenario = scenario
         self._reset()
+        self.current_time = None
 
     @property
     def time(self):
-        return self.scenario.start_time + timedelta(minutes=self.patient.t)
+        self.current_time = self.scenario.start_time + timedelta(minutes=self.patient.t)
+        return self.current_time
 
     def mini_step(self, action):
         # current action
