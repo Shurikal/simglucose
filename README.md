@@ -150,19 +150,12 @@ register(
 
 env = gym.make('simglucose-adolescent2-v0')
 
-observation = env.reset()
+observation, info = env.reset()
 for t in range(100):
     env.render(mode='human')
     print(observation)
-    # Action in the gym environment is a scalar
-    # representing the basal insulin, which differs from
-    # the regular controller action outside the gym
-    # environment (a tuple (basal, bolus)).
-    # In the perfect situation, the agent should be able
-    # to control the glucose only through basal instead
-    # of asking patient to take bolus
     action = env.action_space.sample()
-    observation, reward, done, info = env.step(action)
+    observation, reward, done,_, info = env.step(action)
     if done:
         print("Episode finished after {} timesteps".format(t + 1))
         break
@@ -199,6 +192,35 @@ for t in range(200):
     env.render(mode='human')
     action = env.action_space.sample()
     observation, reward, done, info = env.step(action)
+    print(observation)
+    print("Reward = {}".format(reward))
+    if done:
+        print("Episode finished after {} timesteps".format(t + 1))
+        break
+```
+- Discrete gym
+```python
+import gym
+
+gym.envs.register(
+    id='simglucose-adolescent2-v0',
+    entry_point='simglucose.envs:T1DSimEnvDiscrete',
+    kwargs={'patient_name': 'adolescent#002'}
+)
+
+env = gym.make('simglucose-adolescent2-v0')
+
+reward = 1
+done = False
+
+print(f"Observation space: {env.observation_space}")
+print(f"Action space: {env.action_space}")
+
+observation, info = env.reset()
+for t in range(200):
+    env.render(mode='human')
+    action = env.action_space.sample()
+    observation, reward, done, _, info = env.step(action)
     print(observation)
     print("Reward = {}".format(reward))
     if done:
@@ -353,6 +375,10 @@ report(df)
 ### 1/7/2018
 - Added OpenAI gym support, use `gym.make('simglucose-v0')` to make the environment.
 - Noticed issue: the patient name selection is not available in gym.make for now. The patient name has to be hard-coded in the constructor of `simglucose.envs.T1DSimEnv`.
+### 6/1/2023
+- Newest OPENAI gym support.
+- Patient name selection is now available in gym.make.
+- Added new type of gym with discrete action space.
 
 ## Reporting issues
 Shoot me any bugs, enhancements or even discussion by [creating issues](https://github.com/jxx123/simglucose/issues/new).
