@@ -28,12 +28,13 @@ class T1DSimEnv(gym.Env):
                         reward_fun=None, 
                         seed=None, 
                         history_length=1, 
-                        enable_bolus=False,
+                        enable_manual_bolus=False,
                         enable_meal=False,
                         enable_insulin_history=True):
         '''
         patient_name must be 'adolescent#001' to 'adolescent#010',
         or 'adult#001' to 'adult#010', or 'child#001' to 'child#010'
+        or ['adolescent#001', 'adolescent#002', ...]
         '''
         self.np_random = np.random.default_rng(seed=seed)
 
@@ -44,7 +45,7 @@ class T1DSimEnv(gym.Env):
         self.reward_fun = reward_fun
         self.custom_scenario = custom_scenario
 
-        self.enable_bolus = enable_bolus
+        self.enable_manual_bolus = enable_manual_bolus
 
         self.t1dsimenv, _, _, _ = self._create_env()
 
@@ -54,26 +55,32 @@ class T1DSimEnv(gym.Env):
         self.CHO_hist = [0] * history_length
         self.insulin_hist = [0] * history_length
 
+        # Default observation space
         self.observation_space = spaces.Dict(
             {
                 "CGM": spaces.Box(low=0,high=10000, shape=(history_length,)),
             }
         )
+
+        # Add meal observation space
         self.enable_meal = enable_meal
         if enable_meal:
             self.observation_space["CHO"] = spaces.Box(low=0,high=10000, shape=(history_length,))
 
+        # Add insulin observation space
         self.enable_insulin_history = enable_insulin_history
         if enable_insulin_history:
             self.observation_space["insulin"] = spaces.Box(low=0,high=10000, shape=(history_length,))
 
+        # Default action space
         self.action_space = spaces.Dict(
             {
                 "basal": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_basal'], shape=()),
             }
         )
 
-        if enable_bolus:
+        # Add bolus action space
+        if enable_manual_bolus:
             self.action_space["bolus"] = spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_bolus'], shape=())
 
     def _get_obs(self):
@@ -85,7 +92,6 @@ class T1DSimEnv(gym.Env):
 
         return cache
  
-    # todo match time
     def _get_info(self):
         return {"time": self.t1dsimenv.current_time, 
                 "meal": self.t1dsimenv.scenario.get_action(self.t1dsimenv.current_time).meal, 
@@ -126,6 +132,7 @@ class T1DSimEnv(gym.Env):
         self.t1dsimenv, _, _, _ = self._create_env()
         cache = self.t1dsimenv.reset()
 
+        # Initialize history buffer
         self.CGM_hist = [cache.observation.CGM] * self.history_length
         self.insulin_hist = [0] * self.history_length
         self.CHO_hist = [0] * self.history_length
@@ -138,7 +145,7 @@ class T1DSimEnv(gym.Env):
     
     def step(self, action):
         insulin = 0
-        if self.enable_bolus:
+        if self.enable_manual_bolus:
             act = Action(basal=action["basal"], bolus=action["bolus"])
             insulin = action["bolus"] + action["basal"]
         else:
@@ -183,16 +190,21 @@ class T1DSimEnvDiscrete(gym.Env):
                         reward_fun=None, 
                         seed=None, 
                         history_length=1, 
-                        enable_bolus=False,
+                        enable_manual_bolus=False,
+                        enable_auto_bolus=True,
                         enable_meal=False,
-                        enable_insulin_history=True):
+                        enable_insulin_history=True,
+                        action_space_size=5):
         '''
         patient_name must be 'adolescent#001' to 'adolescent#010',
         or 'adult#001' to 'adult#010', or 'child#001' to 'child#010'
+        or ['adolescent#001', 'adolescent#002', ...]
         '''
         self.np_random = np.random.default_rng(seed=seed)
 
         self.quest = pd.read_csv(CONTROL_QUEST)
+        self.action_space_size = action_space_size
+        self.enable_auto_bolus = enable_auto_bolus
 
         self.insulin_rate = 0
 
@@ -203,7 +215,7 @@ class T1DSimEnvDiscrete(gym.Env):
         self.reward_fun = reward_fun
         self.custom_scenario = custom_scenario
 
-        self.enable_bolus = enable_bolus
+        self.enable_manual_bolus = enable_manual_bolus
 
         self.t1dsimenv, _, _, _ = self._create_env()
 
@@ -213,20 +225,25 @@ class T1DSimEnvDiscrete(gym.Env):
         self.CHO_hist = [0] * history_length
         self.insulin_hist = [0] * history_length
 
+        # Default observation space
         self.observation_space = spaces.Dict(
             {
                 "CGM": spaces.Box(low=0,high=10000, shape=(history_length,)),
             }
         )
+
+        # Add meal observation space
         self.enable_meal = enable_meal
         if enable_meal:
             self.observation_space["CHO"] = spaces.Box(low=0,high=10000, shape=(history_length,))
 
+        # Add insulin observation space
         self.enable_insulin_history = enable_insulin_history
         if enable_insulin_history:
             self.observation_space["insulin"] = spaces.Box(low=0,high=10000, shape=(history_length,))
 
-        self.action_space = spaces.Discrete(5, start=0)
+        # Default action space
+        self.action_space = spaces.Discrete(self.action_space_size, start=0)
 
         # bolus is not implemented
 
@@ -280,23 +297,23 @@ class T1DSimEnvDiscrete(gym.Env):
         self.t1dsimenv, _, _, _ = self._create_env()
         cache = self.t1dsimenv.reset()
 
-        print(self.t1dsimenv.patient.name)
-
+        # Initialize history buffer
         self.CGM_hist = [cache.observation.CGM] * self.history_length
         self.insulin_hist = [0] * self.history_length
         self.CHO_hist = [0] * self.history_length
 
+        # Calculate default basal rate
         self.basal_rate = self.t1dsimenv.patient._params['u2ss'] * self.t1dsimenv.patient._params['BW'] / 6000
 
 
-        # Set params for bolus
-
+        # Set params for bolus injection
         if any(self.quest.Name.str.match(self.t1dsimenv.patient.name)):
+            # Import params from patient questionnaire
             quest = self.quest[self.quest.Name.str.match(self.t1dsimenv.patient.name)]
             self.CR = quest.CR.values[0]
             self.CF = quest.CF.values[0]
-
         else:
+            # If no params are found, use default values
             self.CR = 1 / 15
             self.CF = 1 / 50
 
@@ -305,18 +322,24 @@ class T1DSimEnvDiscrete(gym.Env):
 
         return observation, info
 
-    
-    def step(self, action):
-        action *= 0.5 # 0-4 -> 0-2
-        insulin_rate = self.basal_rate * action
-
-        # add bolus
+    def automatic_bolus(self):
+        # Automatic bolus injection with uncertainty
         bolus = 0
         food = self.t1dsimenv.CHO_hist
         if len(food) > 0 and food[-1] > 0:
             bolus = (food[-1] * self.t1dsimenv.sample_time) / self.CR \
                     + (self.CGM_hist[-1] > 150) * (self.CGM_hist[-1] - 140) /self.CF  # unit: U
             bolus = bolus *  (0.7 + np.random.random()*0.4) / self.t1dsimenv.sample_time
+        return bolus
+    
+    def step(self, action):
+        action *= 0.5 # scale action to 0.5 steps of basal rate
+        insulin_rate = self.basal_rate * action
+
+        # add bolus injection
+        bolus = 0
+        if self.enable_auto_bolus:
+            bolus = self.automatic_bolus()
 
         act = Action(basal=insulin_rate, bolus=bolus)
 
