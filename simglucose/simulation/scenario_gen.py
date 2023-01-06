@@ -35,24 +35,27 @@ class RandomScenario(Scenario):
 
         # Probability of taking each meal
         # [breakfast, snack1, lunch, snack2, dinner, snack3]
-        # prob = [0.95, 0.3, 0.95, 0.3, 0.95, 0.3]
-        time_mu = np.array([7, 10, 14, 21]) * 60
-        time_sigma = np.array([60, 60, 60, 60])
-        amount_mu = [70, 30, 110, 90]
-        amount_sigma = [7, 3, 11, 9]
+        prob = [0.95, 0.3, 0.95, 0.3, 0.95, 0.3]
+        time_lb = np.array([5, 9, 10, 14, 16, 20]) * 60
+        time_ub = np.array([9, 10, 14, 16, 20, 23]) * 60
+        time_mu = np.array([7, 9.5, 12, 15, 18, 21.5]) * 60
+        time_sigma = np.array([60, 30, 60, 30, 60, 30])
+        amount_mu = [45, 10, 70, 10, 80, 10]
+        amount_sigma = [10, 5, 10, 5, 10, 5]
 
-        for tbar, tsd, mbar, msd in zip(time_mu, time_sigma,
-                                        amount_mu, amount_sigma):
-
-            tmeal = np.round(self.random_gen.normal(tbar, tsd))
-            #     truncnorm.rvs(a=(tlb - tbar) / tsd,
-            #                     b=(tub - tbar) / tsd,
-            #                     loc=tbar,
-            #                     scale=tsd,
-            #                     random_state=self.random_gen))
-            scenario['meal']['time'].append(tmeal)
-            scenario['meal']['amount'].append(
-                max(round(self.random_gen.normal(mbar, msd)), 0))
+        for p, tlb, tub, tbar, tsd, mbar, msd in zip(prob, time_lb, time_ub,
+                                                     time_mu, time_sigma,
+                                                     amount_mu, amount_sigma):
+            if self.random_gen.rand() < p:
+                tmeal = np.round(
+                    truncnorm.rvs(a=(tlb - tbar) / tsd,
+                                  b=(tub - tbar) / tsd,
+                                  loc=tbar,
+                                  scale=tsd,
+                                  random_state=self.random_gen))
+                scenario['meal']['time'].append(tmeal)
+                scenario['meal']['amount'].append(
+                    max(round(self.random_gen.normal(mbar, msd)), 0))
 
         return scenario
 
