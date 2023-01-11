@@ -36,10 +36,10 @@ class RandomScenario(Scenario):
         # Probability of taking each meal
         # [breakfast, snack1, lunch, snack2, dinner, snack3]
         # prob = [0.95, 0.3, 0.95, 0.3, 0.95, 0.3]
-        time_mu = np.array([7, 10, 14, 21]) * 60
-        time_sigma = np.array([60, 60, 60, 60])
-        amount_mu = [70, 30, 110, 90]
-        amount_sigma = [7, 3, 11, 9]
+        time_mu = np.array([7, 14, 21]) * 60
+        time_sigma = np.array([30,  30, 30])
+        amount_mu = [70, 110, 90]
+        amount_sigma = [7, 11, 9]
 
         for tbar, tsd, mbar, msd in zip(time_mu, time_sigma,
                                         amount_mu, amount_sigma):
