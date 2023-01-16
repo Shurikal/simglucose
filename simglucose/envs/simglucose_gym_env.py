@@ -329,7 +329,7 @@ class T1DSimEnvDiscrete(gym.Env):
         if len(food) > 0 and food[-1] > 0:
             bolus = (food[-1] * self.t1dsimenv.sample_time) / self.CR \
                     + (self.CGM_hist[-1] > 150) * (self.CGM_hist[-1] - 140) /self.CF  # unit: U
-            bolus = bolus *  (0.7 + np.random.random()*0.4) / self.t1dsimenv.sample_time
+            bolus = bolus *  (0.9 + np.random.random()*0.2) / self.t1dsimenv.sample_time
         return bolus
     
     def step(self, action):
