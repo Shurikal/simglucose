@@ -14,13 +14,14 @@ from simglucose.controller.basal_bolus_ctrller import CONTROL_QUEST
 import pandas as pd
 
 from datetime import datetime
+import gymnasium
+
 
 class T1DSimEnv(gym.Env):
 
     metadata = {"render_modes": ["human"], "render_fps": 4}
 
-    SENSOR_HARDWARE = 'Dexcom'
-    INSULIN_PUMP_HARDWARE = 'Insulet'
+    metadata = {"render.modes": ["human"]}
 
   
     def __init__(self,  patient_name=None, 
@@ -39,7 +40,7 @@ class T1DSimEnv(gym.Env):
         self.np_random = np.random.default_rng(seed=seed)
 
         if patient_name is None:
-            patient_name = ['adolescent#001']
+            patient_name = ["adolescent#001"]
 
         self.patient_name = patient_name
         self.reward_fun = reward_fun
@@ -114,13 +115,19 @@ class T1DSimEnv(gym.Env):
             patient_name = self.np_random.choice(self.patient_name)
             patient = T1DPatient.withName(patient_name, random_init_bg=True, seed=seed4)
         else:
-            patient = T1DPatient.withName(self.patient_name, random_init_bg=True, seed=seed4)
+            patient = T1DPatient.withName(
+                self.patient_name, random_init_bg=True, seed=seed4
+            )
 
         if isinstance(self.custom_scenario, list):
-           scenario = self.np_random.choice(self.custom_scenario)
+            scenario = self.np_random.choice(self.custom_scenario)
         else:
-            scenario = RandomScenario(start_time=start_time, seed=seed3) if self.custom_scenario is None else self.custom_scenario
-        
+            scenario = (
+                RandomScenario(start_time=start_time, seed=seed3)
+                if self.custom_scenario is None
+                else self.custom_scenario
+            )
+
         sensor = CGMSensor.withName(self.SENSOR_HARDWARE, seed=seed2)
         pump = InsulinPump.withName(self.INSULIN_PUMP_HARDWARE)
         env = _T1DSimEnv(patient, sensor, pump, scenario)

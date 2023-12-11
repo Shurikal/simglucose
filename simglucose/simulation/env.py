@@ -20,7 +20,7 @@ except ImportError:
         return _Step(observation, reward, done, kwargs)
 
 
-Observation = namedtuple('Observation', ['CGM'])
+Observation = namedtuple("Observation", ["CGM"])
 logger = logging.getLogger(__name__)
 
 
@@ -66,9 +66,9 @@ class T1DSimEnv(object):
         return CHO, insulin, BG, CGM
 
     def step(self, action, reward_fun=risk_diff):
-        '''
+        """
         action is a namedtuple with keys: basal, bolus
-        '''
+        """
         CHO = 0.0
         insulin = 0.0
         BG = 0.0
@@ -105,18 +105,20 @@ class T1DSimEnv(object):
         done = BG < 30 or BG > 300
         obs = Observation(CGM=CGM)
 
-        return Step(observation=obs,
-                    reward=reward,
-                    done=done,
-                    sample_time=self.sample_time,
-                    patient_name=self.patient.name,
-                    meal=CHO,
-                    patient_state=self.patient.state,
-                    time=self.time,
-                    bg=BG,
-                    lbgi=LBGI,
-                    hbgi=HBGI,
-                    risk=risk)
+        return Step(
+            observation=obs,
+            reward=reward,
+            done=done,
+            sample_time=self.sample_time,
+            patient_name=self.patient.name,
+            meal=CHO,
+            patient_state=self.patient.state,
+            time=self.time,
+            bg=BG,
+            lbgi=LBGI,
+            hbgi=HBGI,
+            risk=risk,
+        )
 
     def _reset(self):
         self.sample_time = self.sensor.sample_time
@@ -143,30 +145,35 @@ class T1DSimEnv(object):
         self._reset()
         CGM = self.sensor.measure(self.patient)
         obs = Observation(CGM=CGM)
-        return Step(observation=obs,
-                    reward=0,
-                    done=False,
-                    sample_time=self.sample_time,
-                    patient_name=self.patient.name,
-                    meal=0,
-                    patient_state=self.patient.state,
-                    time=self.time,
-                    bg=self.BG_hist[0],
-                    lbgi=self.LBGI_hist[0],
-                    hbgi=self.HBGI_hist[0],
-                    risk=self.risk_hist[0])
+        return Step(
+            observation=obs,
+            reward=0,
+            done=False,
+            sample_time=self.sample_time,
+            patient_name=self.patient.name,
+            meal=0,
+            patient_state=self.patient.state,
+            time=self.time,
+            bg=self.BG_hist[0],
+            lbgi=self.LBGI_hist[0],
+            hbgi=self.HBGI_hist[0],
+            risk=self.risk_hist[0],
+        )
 
     def render(self, close=False):
         if close:
-            if self.viewer is not None:
-                self.viewer.close()
-                self.viewer = None
+            self._close_viewer()
             return
 
         if self.viewer is None:
             self.viewer = Viewer(self.scenario.start_time, self.patient.name)
 
         self.viewer.render(self.show_history())
+
+    def _close_viewer(self):
+        if self.viewer is not None:
+            self.viewer.close()
+            self.viewer = None
 
     def show_history(self):
         df = pd.DataFrame()
