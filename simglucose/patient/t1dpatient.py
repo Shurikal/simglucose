@@ -257,19 +257,19 @@ class T1DPatient(Patient):
         if self.random_init_bg:
             # Only randomize glucose related states, x4, x5, and x13
             mean = [
-                1.0 * self.init_state[3], 1.0 * self.init_state[4],
-                1.0 * self.init_state[12]
+                1.0 * self.init_state.iloc[3], 1.0 * self.init_state.iloc[4],
+                1.0 * self.init_state.iloc[12]
             ]
             cov = np.diag([
-                0.1 * self.init_state[3], 0.1 * self.init_state[4],
-                0.1 * self.init_state[12]
+                0.1 * self.init_state.iloc[3], 0.1 * self.init_state.iloc[4],
+                0.1 * self.init_state.iloc[12]
             ])
             bg_init = self.random_state.multivariate_normal(mean, cov)
-            self.init_state[3] = 1.0 * bg_init[0]
-            self.init_state[4] = 1.0 * bg_init[1]
-            self.init_state[12] = 1.0 * bg_init[2]
+            self.init_state.iloc[3] = 1.0 * bg_init[0]
+            self.init_state.iloc[4] = 1.0 * bg_init[1]
+            self.init_state.iloc[12] = 1.0 * bg_init[2]
 
-        self._last_Qsto = self.init_state[0] + self.init_state[1]
+        self._last_Qsto = self.init_state.iloc[0] + self.init_state.iloc[1]
         self._last_foodtaken = 0
         self.name = self._params.Name
 
