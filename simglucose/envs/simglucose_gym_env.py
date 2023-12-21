@@ -21,7 +21,8 @@ class T1DSimEnv(gym.Env):
 
     metadata = {"render_modes": ["human"], "render_fps": 4}
 
-    metadata = {"render.modes": ["human"]}
+    SENSOR_HARDWARE = 'Dexcom'
+    INSULIN_PUMP_HARDWARE = 'Insulet'
 
   
     def __init__(self,  patient_name=None, 
