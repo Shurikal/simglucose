@@ -11,7 +11,7 @@ setup(
     license='MIT',
     packages=['simglucose'],
     install_requires=[
-        'pandas', 'numpy', 'scipy', 'matplotlib', 'pathos', 'gym'
+        'pandas', 'numpy', 'scipy', 'matplotlib', 'pathos', 'gymnasium'
     ],
     include_package_data=True,
     zip_safe=False,
