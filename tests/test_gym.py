@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import unittest
 from simglucose.controller.basal_bolus_ctrller import BBController
 from collections import namedtuple
@@ -6,7 +6,7 @@ from collections import namedtuple
 Observation = namedtuple('Observation', ['CGM'])
 class TestGym(unittest.TestCase):
     def test_gym_random_agent(self):
-        from gym.envs.registration import register
+        from gymnasium.envs.registration import register
         register(
             id='simglucose-adolescent2-v0',
             entry_point='simglucose.envs:T1DSimEnv',
@@ -21,7 +21,7 @@ class TestGym(unittest.TestCase):
 
         observation, info = env.reset()
         for t in range(200):
-            env.render(mode='human')
+            env.render()
             print(observation)
             # action = env.action_space.sample()
             obs = Observation(observation["CGM"])

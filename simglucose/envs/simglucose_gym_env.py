@@ -1,5 +1,5 @@
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
 
 from simglucose.simulation.env import T1DSimEnv as _T1DSimEnv
@@ -14,7 +14,6 @@ from simglucose.controller.basal_bolus_ctrller import CONTROL_QUEST
 import pandas as pd
 
 from datetime import datetime
-import gymnasium
 
 
 class T1DSimEnv(gym.Env):

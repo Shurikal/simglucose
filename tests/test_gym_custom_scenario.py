@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import unittest
 from simglucose.simulation.scenario import CustomScenario
 from simglucose.controller.basal_bolus_ctrller import BBController
@@ -37,7 +37,7 @@ class TestCustomScenario(unittest.TestCase):
         sample_step = info["sample_time"]
 
         for t in range(61):
-            env.render(mode='human')
+            env.render()
             obs = Observation(observation["CGM"])
 
             ctrl_action = ctrller.policy(obs, reward, done, **info)

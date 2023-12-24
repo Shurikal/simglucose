@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import unittest
 from simglucose.controller.basal_bolus_ctrller import BBController
 from collections import namedtuple
@@ -18,7 +18,7 @@ def custom_reward(BG_last_hour):
 
 class TestCustomReward(unittest.TestCase):
     def test_custom_reward(self):
-        from gym.envs.registration import register
+        from gymnasium.envs.registration import register
         register(
             id='simglucose-adolescent3-v0',
             entry_point='simglucose.envs:T1DSimEnv',

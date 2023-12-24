@@ -1,5 +1,5 @@
 from datetime import datetime
-import gym
+import gymnasium as gym
 import simglucose
 from simglucose.simulation.scenario import CustomScenario
 import numpy as np
