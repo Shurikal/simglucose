@@ -36,7 +36,7 @@ class TestCustomReward(unittest.TestCase):
 
         observation, info = env.reset()
         for t in range(200):
-            env.render(mode='human')
+            env.render()
             print(observation)
             # action = env.action_space.sample()
             obs = Observation(observation["CGM"])
