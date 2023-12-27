@@ -319,18 +319,31 @@ class T1DSimEnvBolus(T1DSimEnvBase):
                         enable_manual_bolus=False,
                         enable_meal=enable_meal,
                         enable_insulin_history=enable_insulin_history)
-
-        # Default action space
-        self.action_space = spaces.Dict(
-            {
-                "bolus": spaces.Box(low=0,high=self.t1dsimenv.pump._params['max_bolus'], shape=()),
-            }
-        )
+        
+        # Discrete Action Space
+        self.action_space_size = 7
+        self.action_space = spaces.Discrete(self.action_space_size, start=0)
+        self.percentages = [0.75, 0.8, 0.9, 1, 1.1, 1.2, 1.25]
 
 
     def step(self, action):
-        insulin = action["bolus"] + self.basal_rate
-        act = Action(basal=self.basal_rate, bolus=insulin)
+
+        # Standard Bolus calculator
+        cho = self.t1dsimenv.scenario.get_action(self.t1dsimenv.current_time).meal
+
+        target_bg = 100 # target blood glucose level
+        iob = np.sum(self.insulin_hist[-1:]) # insulin on board
+        bcs = cho / self.CR + (self.CGM_hist[-1] - target_bg) / self.CF - iob
+
+        if cho > 0:
+            # take action
+            bolus = bcs * self.percentages[action] + self.basal_rate
+        else:
+            bolus = 0
+
+        insulin = bolus + self.basal_rate
+
+        act = Action(basal=self.basal_rate, bolus=bolus)
 
         if self.reward_fun is None:
             cache = self.t1dsimenv.step(act)
