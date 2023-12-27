@@ -21,8 +21,8 @@ class TestGym(unittest.TestCase):
 
         observation, info = env.reset()
         for t in range(200):
-            env.render()
-            print(observation)
+            #env.render()
+            #print(observation)
             # action = env.action_space.sample()
             obs = Observation(observation["CGM"])
 
