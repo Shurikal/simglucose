@@ -337,7 +337,7 @@ class T1DSimEnvBolus(T1DSimEnvBase):
 
         if cho > 0:
             # take action
-            bolus = bcs * self.percentages[action] + self.basal_rate
+            bolus = bcs * self.percentages[action]
         else:
             bolus = 0
 
