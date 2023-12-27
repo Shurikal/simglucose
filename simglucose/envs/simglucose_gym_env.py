@@ -329,17 +329,14 @@ class T1DSimEnvBolus(T1DSimEnvBase):
     def step(self, action):
 
         # Standard Bolus calculator
-        cho = self.t1dsimenv.scenario.get_action(self.t1dsimenv.current_time).meal
-
-        target_bg = 100 # target blood glucose level
-        iob = np.sum(self.insulin_hist[-1:]) # insulin on board
-        bcs = cho / self.CR + (self.CGM_hist[-1] - target_bg) / self.CF - iob
-
-        if cho > 0:
-            # take action
-            bolus = bcs * self.percentages[action]
+        food = self.t1dsimenv.CHO_hist
+        if len(food) > 0 and food[-1] > 0:
+            bolus = (food[-1] * self.t1dsimenv.sample_time) / self.CR \
+                    + (self.CGM_hist[-1] > 150) * (self.CGM_hist[-1] - 140) / self.CF  # IOB missing
+            bolus = bolus *  self.percentages[action]
         else:
             bolus = 0
+
 
         insulin = bolus + self.basal_rate
 
