@@ -325,6 +325,32 @@ class T1DSimEnvBolus(T1DSimEnvBase):
         self.action_space = spaces.Discrete(self.action_space_size, start=0)
         self.percentages = [0.75, 0.8, 0.9, 1, 1.1, 1.2, 1.25]
 
+        self.observation_space["deltaCGM"] = spaces.Box(low=-1000,high=10000, shape=(history_length,))
+        self.observation_space["CR"] = spaces.Box(low=0,high=10000, shape=(history_length,))
+        
+
+    def _get_obs(self):
+        cache = {"CGM": np.array(self.CGM_hist, dtype=np.float32),
+                 "deltaCGM": np.array(self.CGM_delta_hist, dtype=np.float32),
+                 "CR": np.array(self.CR_hist, dtype=np.float32)}
+        if self.enable_meal:
+            cache["CHO"] =  np.array(self.CHO_hist, dtype=np.float32)
+        if self.enable_insulin_history:
+            cache["insulin"] =  np.array(self.insulin_hist, dtype=np.float32)
+
+        return cache
+
+
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+
+        self.CGM_delta_hist = [0] * self.history_length
+        self.CR_hist = [self.CR] * self.history_length
+        
+        observation = self._get_obs()
+        info = self._get_info()
+        return observation, info
+
 
     def step(self, action):
 
@@ -346,7 +372,9 @@ class T1DSimEnvBolus(T1DSimEnvBase):
             cache = self.t1dsimenv.step(act)
         else:
             cache = self.t1dsimenv.step(act, reward_fun=self.reward_fun)
-
+        delta_CGM = cache.observation.CGM - self.CGM_hist[-1]
+        self.CGM_delta_hist = self.CHO_delta_hist[1:] + [delta_CGM]
+        self.CR_hist = self.CR_hist[1:] + [self.CR]
         self.CGM_hist = self.CGM_hist[1:] + [cache.observation.CGM]
         self.CHO_hist = self.CHO_hist[1:] + [cache.info["meal"]]
         self.insulin_hist = self.insulin_hist[1:] + [insulin]
