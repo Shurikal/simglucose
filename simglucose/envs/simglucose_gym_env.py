@@ -327,6 +327,8 @@ class T1DSimEnvBolus(T1DSimEnvBase):
 
         self.observation_space["deltaCGM"] = spaces.Box(low=-1000,high=10000, shape=(history_length,))
         self.observation_space["CR"] = spaces.Box(low=0,high=10000, shape=(history_length,))
+        self.CGM_delta_hist = [0] * self.history_length
+        self.CR_hist = [0] * self.history_length
         
 
     def _get_obs(self):
@@ -373,7 +375,7 @@ class T1DSimEnvBolus(T1DSimEnvBase):
         else:
             cache = self.t1dsimenv.step(act, reward_fun=self.reward_fun)
         delta_CGM = cache.observation.CGM - self.CGM_hist[-1]
-        self.CGM_delta_hist = self.CHO_delta_hist[1:] + [delta_CGM]
+        self.CGM_delta_hist = self.CGM_delta_hist[1:] + [delta_CGM]
         self.CR_hist = self.CR_hist[1:] + [self.CR]
         self.CGM_hist = self.CGM_hist[1:] + [cache.observation.CGM]
         self.CHO_hist = self.CHO_hist[1:] + [cache.info["meal"]]
